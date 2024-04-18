@@ -1,8 +1,1 @@
-This is the prototype described in Multiple-Representation Visual Compositional Dataflow Programming
-from PX 2023. It is accessible [live online], and the paper is available from the
-[ACM Digital Library] or [my website].
-
-
-  [live online]: https://mwh.nz/demos/px2023
-  [ACM Digital Library]: https://doi.org/10.1145/3594671.3594681
-  [my website]: https://mwh.nz/pubs/px2023# mrvcdp
+This prototype builds upon the foundation aid out in a previous research by Michael Homer, [ACM Digital Library](https://doi.org/10.1145/3594671.3594681), which aims  to enhance user experience and empower users with a diverse set of tools for expressing and manipulating data-flow programs.The live version of the existing prototype can be found [here](https://mwh.nz/demos/px2023).
