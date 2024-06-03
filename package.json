@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "blockly": "^11.0.0"
+    "blockly": "^11.0.0",
+    "react-blockly": "^8.1.1"
   }
 }

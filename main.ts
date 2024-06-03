@@ -11,15 +11,18 @@ import { FunctionOutputPort } from "./layers/functionnode.js";
 import * as csvloader from './csvloader.js';
 import { ArgumentNode, WaypointNode } from "./layers/node.js";
 import TextRenderer from "./renderers/textrenderer.js";
+import { BlockRenderer } from "./renderers/blockrenderer.js";
+import * as Blockly from 'blockly/core';
+import 'blockly/blocks';
 
 import * as colourdata from './functions/colourdata.js';
 import * as types from './functions/types.js';
 import GraphConnection from "./layers/connections.js";
 
 
-let tabFunctions = [] as Array<{graph : LayerGraph, name : string, viewMode : string, data : Array<Array<any>>, userFunc: SubductFunction | undefined}>;
+let tabFunctions = [] as Array<{ graph: LayerGraph, name: string, viewMode: string, data: Array<Array<any>>, userFunc: SubductFunction | undefined }>;
 
-let currentTabFunction : {graph : LayerGraph, name : string, viewMode : string, data : Array<Array<any>>, userFunc : SubductFunction | undefined } | undefined;
+let currentTabFunction: { graph: LayerGraph, name: string, viewMode: string, data: Array<Array<any>>, userFunc: SubductFunction | undefined } | undefined;
 
 let graph = new LayerGraph();
 
@@ -43,15 +46,15 @@ pr = parser.parse("1 2 3 bury:3")
 pr = parser.parse("colour:c69801 to-rgb drop swap double colour:008678 complement dup to-hsl drop:2 swap bury mul");
 
 graph = parser.toGraph(pr)
-let renderer : GridRenderer | GraphRenderer | TextRenderer = new GraphRenderer(graph, progSVG);
+let renderer: GridRenderer | GraphRenderer | TextRenderer = new GraphRenderer(graph, progSVG); // TODO: Add BlockRenderer here 
 let renderInfo = renderer.render()
 opm = renderInfo.valueContainers
 
-function renderValue(parent : Element, value : any, type : types.Type) {
+function renderValue(parent: Element, value: any, type: types.Type) {
     if (type._name == "stream") {
         parent.textContent = type.toString();
     } else if (type === types.colour) {
-        let rgb = value as {r: number, g: number, b: number};
+        let rgb = value as { r: number, g: number, b: number };
         let colSp = document.createElement("span");
         colSp.style.display = 'inline-block';
         //colSp.style.width = '20px';
@@ -99,8 +102,8 @@ function renderValue(parent : Element, value : any, type : types.Type) {
         parent.textContent = type.toString();
 }
 
-function renderValues(ctx : { getOutput(port : FunctionOutputPort | functionnodes.ArgumentOutputPort) : any},
-    opm : Map<FunctionOutputPort | functionnodes.ArgumentOutputPort, Array<Element>>) {
+function renderValues(ctx: { getOutput(port: FunctionOutputPort | functionnodes.ArgumentOutputPort): any },
+    opm: Map<FunctionOutputPort | functionnodes.ArgumentOutputPort, Array<Element>>) {
     for (let port of opm.keys()) {
         for (let el of opm.get(port)!) {
             while (el.firstChild)
@@ -140,7 +143,7 @@ function renderValues(ctx : { getOutput(port : FunctionOutputPort | functionnode
 let ctx = await graph.evaluate2()
 renderValues(ctx, opm);
 
-currentTabFunction = {graph, name: "Main", viewMode: "grid", data : [], userFunc: undefined };
+currentTabFunction = { graph, name: "Main", viewMode: "grid", data: [], userFunc: undefined };
 tabFunctions.push(currentTabFunction);
 if (true) {
     let graph = parser.toGraph(parser.parse("1 2 add"));
@@ -148,12 +151,12 @@ if (true) {
         let ev = await otherTF.graph.evaluate2()
         return ev.returnValues
     })
-    let otherTF = { graph, name: "Other", viewMode: "graph", data : [], userFunc: sdf }
+    let otherTF = { graph, name: "Other", viewMode: "graph", data: [], userFunc: sdf }
     tabFunctions.push(otherTF)
     functions.BuiltinFunctions.addFunction(sdf);
 }
 
-function updateTabBar(activeTab? : {graph : LayerGraph, name : string, viewMode : string}) {
+function updateTabBar(activeTab?: { graph: LayerGraph, name: string, viewMode: string }) {
     if (currentTabFunction) {
         if (currentTabFunction.userFunc) {
             let sdf = currentTabFunction.userFunc;
@@ -169,6 +172,7 @@ function updateTabBar(activeTab? : {graph : LayerGraph, name : string, viewMode 
             (document.getElementById('render_mode_text') as HTMLInputElement).checked = false;
             (document.getElementById('render_mode_grid') as HTMLInputElement).checked = false;
             (document.getElementById('render_mode_graph') as HTMLInputElement).checked = false;
+            (document.getElementById('render_mode_block') as HTMLInputElement).checked = false;
             (document.getElementById('render_mode_' + tab.viewMode) as HTMLInputElement).checked = true;
             updateTabContent(tab);
             updateTabBar(tab);
@@ -183,7 +187,7 @@ function updateTabBar(activeTab? : {graph : LayerGraph, name : string, viewMode 
     newTabButton.style.paddingTop = '0';
     newTabButton.textContent = '+'
     tabBar.append(newTabButton);
-    newTabButton.addEventListener('click', function() {
+    newTabButton.addEventListener('click', function () {
         let name = prompt("Function name") ?? "newfunction"
         let argTypeStr = prompt("Parameter types (space-separated, empty for none)")
         let graph = new LayerGraph(functions.BuiltinFunctions)
@@ -201,16 +205,16 @@ function updateTabBar(activeTab? : {graph : LayerGraph, name : string, viewMode 
                 graph.getLayer(1).push(wp);
                 conn.via.push(wp);
                 arg.port.connections.push(conn);
-                graph.resultPorts.push({port: arg.port, connection: conn})
+                graph.resultPorts.push({ port: arg.port, connection: conn })
                 argPorts.push(arg.port)
             }
             graph.setArguments(argPorts);
         }
-        let sdf = new SubductFunction(name, argPorts, graph.resultPorts.map(x => x.port), async (...args : any[]) => {
+        let sdf = new SubductFunction(name, argPorts, graph.resultPorts.map(x => x.port), async (...args: any[]) => {
             let ev = await newTab.graph.evaluate2(args.length ? args : undefined)
             return ev.returnValues
         })
-        let newTab = {graph, name, viewMode: "grid", data : [], userFunc: sdf};
+        let newTab = { graph, name, viewMode: "grid", data: [], userFunc: sdf };
         tabFunctions.push(newTab);
         functions.BuiltinFunctions.addFunction(sdf)
         updateTabContent(newTab);
@@ -221,16 +225,19 @@ function updateTabBar(activeTab? : {graph : LayerGraph, name : string, viewMode 
 
 let currentOutputValueMap = new Map<FunctionOutputPort | functionnodes.ArgumentOutputPort, Array<Element>>();
 
-function createRenderListener(tab : {graph : LayerGraph, name : string, viewMode : string, data : Array<Array<any>>}, renderer : GridRenderer | GraphRenderer) {
-    return async (opm : RenderResult, newFunc? : {node: FunctionNode, originalFunction? : SubductFunction}) => {
+// TODO: Add BlockRenderer here
+function createRenderListener(tab: { graph: LayerGraph, name: string, viewMode: string, data: Array<Array<any>> }, renderer: GridRenderer | GraphRenderer) {
+    return async (opm: RenderResult, newFunc?: { node: FunctionNode, originalFunction?: SubductFunction }) => {
         graph.describe();
         renderInfo = opm;
         if (!graph.can2D()) {
             (document.getElementById('render_mode_grid') as HTMLInputElement).disabled = true;
             (document.getElementById('render_mode_text') as HTMLInputElement).disabled = true;
+            (document.getElementById('render_mode_block') as HTMLInputElement).disabled = true;
         } else {
             (document.getElementById('render_mode_grid') as HTMLInputElement).disabled = false;
             (document.getElementById('render_mode_text') as HTMLInputElement).disabled = !graph.isLinear(true);
+            (document.getElementById('render_mode_block') as HTMLInputElement).disabled = false;
         }
         let args = undefined
         let rowSelect = document.getElementById("row-select") as HTMLSelectElement;
@@ -247,10 +254,10 @@ function createRenderListener(tab : {graph : LayerGraph, name : string, viewMode
         } else {
             document.getElementById("output")!.textContent = '';
         }
-        let ctx : EvaluationContext = {
-            getOutput(x:any) { return undefined; },
-            returnValues : [[]],
-            stopped : false,
+        let ctx: EvaluationContext = {
+            getOutput(x: any) { return undefined; },
+            returnValues: [[]],
+            stopped: false,
         };
         if (graph.arguments.length == 0 || args)
             ctx = await graph.evaluate2(args);
@@ -302,7 +309,7 @@ function createRenderListener(tab : {graph : LayerGraph, name : string, viewMode
     }
 }
 
-async function updateTabContent(tab : {graph : LayerGraph, name : string, viewMode : string, data : Array<Array<any>>}) {
+async function updateTabContent(tab: { graph: LayerGraph, name: string, viewMode: string, data: Array<Array<any>> }) {
     graph = tab.graph;
     let np = origProgSVG.cloneNode(true) as unknown as SVGSVGElement;
     progSVG.height.baseVal.convertToSpecifiedUnits(5);
@@ -315,19 +322,30 @@ async function updateTabContent(tab : {graph : LayerGraph, name : string, viewMo
         renderer = new GraphRenderer(graph, progSVG);
     } else if (tab.viewMode == 'grid') {
         renderer = new GridRenderer(graph, progSVG);
-    } else {
+    } else if (tab.viewMode == 'text') {
         renderer = new TextRenderer(graph, progSVG);
+    } else {
+        console.log("BlockRenderer");
     }
+    // } else if (tab.viewMode === 'block') {
+    //     renderer = new BlockRenderer();
+    //     renderer.showBlockTab();
+    // }
+    // TODO: make a constructor for block-based editor
+    // } else {
+    //     renderer = new BlockRenderer(graph, progSVG);
+    // }
     renderer.addRenderListener(createRenderListener(tab, renderer));
     (document.getElementById('render_mode_text') as HTMLInputElement).checked = false;
     (document.getElementById('render_mode_grid') as HTMLInputElement).checked = false;
     (document.getElementById('render_mode_graph') as HTMLInputElement).checked = false;
+    (document.getElementById('render_mode_block') as HTMLInputElement).checked = false;
     (document.getElementById('render_mode_' + tab.viewMode) as HTMLInputElement).checked = true;
     renderer.render();
 }
 
 let rowSelect = document.getElementById('row-select') as HTMLSelectElement;
-rowSelect.addEventListener('change', async function() {
+rowSelect.addEventListener('change', async function () {
     let ctx = await graph.evaluate2(currentTabFunction!.data[parseInt(rowSelect.value)]);
     //console.log('ctx', ctx, 'row', parseInt(rowSelect.value), 'args', currentTabFunction!.data[parseInt(rowSelect.value)]);
     //console.log('data', currentTabFunction!.data)
@@ -341,7 +359,8 @@ updateTabContent(currentTabFunction);
 let hbvv = (<any>progSVG).height.baseVal.value
 document.getElementById('concat-entry')?.addEventListener('keydown', async function (e) {
     if (e.key == 'Enter') {
-        let renderType = {'text': TextRenderer, 'grid': GridRenderer, 'graph': GraphRenderer}[currentTabFunction!.viewMode]!;
+        // TODO: add a render type for 'block': BlockRenderer
+        let renderType = { 'text': TextRenderer, 'grid': GridRenderer, 'graph': GraphRenderer }[currentTabFunction!.viewMode]!;
         //progSVG.setAttribute("width", "100%")
         //(<any>progSVG).width.baseVal.value = window.innerWidth
         let np = origProgSVG.cloneNode(true) as unknown as SVGSVGElement;
@@ -366,9 +385,9 @@ document.getElementById('concat-entry')?.addEventListener('keydown', async funct
             ctx = await graph.evaluate2()
         } else {
             ctx = {
-                getOutput(x:any) { return undefined; },
-                returnValues : [[]],
-                stopped : false,
+                getOutput(x: any) { return undefined; },
+                returnValues: [[]],
+                stopped: false,
             };
         }
         renderValues(ctx, opm);
@@ -376,13 +395,42 @@ document.getElementById('concat-entry')?.addEventListener('keydown', async funct
     }
 })
 
+// Add a function to remove the current graph-related elements from the DOM
+function clearGraph() {
+    // Remove the existing SVG element
+    const progSVG = document.getElementById("progSVG");
+    if (progSVG) {
+        progSVG.remove();
+    }
+}
+
+document.getElementById('render_mode_block')?.addEventListener('change', async (e) => {
+    if (currentTabFunction!.viewMode == 'graph')
+        await animateGraphToGrid();
+    // await animateGraphToBlock(); // TODO: Implement this method
+    if (currentTabFunction!.viewMode == 'grid') // TODO: change these when I've implemented proper block conversion methods
+        await animateGridToBlock();
+    if (currentTabFunction!.viewMode == 'text') {
+        // await animateTextToBlock(); // TODO: Implement this method
+    }
+    currentTabFunction!.viewMode = 'block';
+    updateTabContent(currentTabFunction!);
+    console.log("In block mode");
+    document.getElementById('concat-entry')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+})
+// TODO: Implement the new animations for each event listener
 document.getElementById('render_mode_graph')?.addEventListener('change', async (e) => {
     if (currentTabFunction!.viewMode == 'grid')
         await animateGridToGraph();
     if (currentTabFunction!.viewMode == 'text') {
+        // await animateTextToBlock();
+        // await animateBlockToGrid();
         await animateTextToGrid();
         await animateGridToGraph();
     }
+    // if (currentTabFunction!.viewMode == 'block')
+    //     await animateBlockToGrid();
+    //     await animateGridToGraph();
     currentTabFunction!.viewMode = 'graph';
     updateTabContent(currentTabFunction!);
     //document.getElementById('concat-entry')?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))
@@ -392,6 +440,8 @@ document.getElementById('render_mode_grid')?.addEventListener('change', async (e
         await animateGraphToGrid();
     if (currentTabFunction!.viewMode == 'text')
         await animateTextToGrid();
+    // if (currentTabFunction!.viewMode == 'block')
+    //     await animateBlockToGrid();
     currentTabFunction!.viewMode = 'grid';
     updateTabContent(currentTabFunction!);
     //document.getElementById('concat-entry')?.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))
@@ -403,6 +453,8 @@ document.getElementById('render_mode_text')?.addEventListener('change', async (e
         await animateGraphToGrid();
         await animateGridToText();
     }
+    // if (currentTabFunction!.viewMode == 'block')
+    //     await animateBlockToText();
     currentTabFunction!.viewMode = 'text';
     updateTabContent(currentTabFunction!);
     //updateTabContent(currentTabFunction!);
@@ -441,7 +493,7 @@ function makePathSlightlyIndirect(path: SVGPathElement, x1: number, y1: number, 
         newPath = newPath.replace('a0 0 0 0 1 0 0', downLeft)
     } else {
         newPath = newPath.replace('v 0', `v ${(y2 - y1) / 2}`)
-    
+
         if (x2 < x1 + 70) {
             newPath = newPath.replace('a0 0 0 0 1 0 0', downLeft)
             newPath = newPath.replace('h 0', `h ${(x2 - x1) - 50}`)
@@ -464,13 +516,24 @@ function makePathSlightlyIndirect(path: SVGPathElement, x1: number, y1: number, 
     path.style.setProperty("d", `path("${newPath}")`);
 }
 
-function wait(n : number) {
+function wait(n: number) {
     return new Promise((resolve) => {
         setTimeout(resolve, n)
     })
 }
 
-async function animateGridToGraph () {
+async function animateGridToBlock() {
+    // Create an instance of BlockRenderer
+    const blockRenderer = new BlockRenderer();
+
+    // Ensure the block editor is visible
+    blockRenderer.showBlockTab();
+
+    // Render the Blockly workspace
+    blockRenderer.render();
+}
+
+async function animateGridToGraph() {
     // Render grid specifically
     let concatEntry = document.getElementById('concat-entry') as HTMLInputElement
     let np = origProgSVG.cloneNode(true) as unknown as SVGSVGElement;
@@ -499,7 +562,7 @@ async function animateGridToGraph () {
         //console.log('removing argument group', g)
         g?.remove();
     }
-    
+
     // Now start animating
     progSVG.width.baseVal.convertToSpecifiedUnits(5);
     if (progSVG.width.baseVal.valueInSpecifiedUnits < window.innerWidth) {
@@ -602,7 +665,7 @@ async function animateGridToGraph () {
                 edge!.style.transition = 'd 0.5s';
                 makePathSlightlyIndirect(edge!,
                     x + 150, (y + 20 + portIdx * 50 + 25),
-                    destX, destY)    
+                    destX, destY)
             })
             //edge.style.transition = 'd 0.5s';
         } else if (edge && graphRenderer.resultLookup.get(conn)) {
@@ -640,7 +703,7 @@ async function animateGridToGraph () {
         g.style.display = '';
     }
     await wait(1000);
-    for (let [conn, {path, group}] of graphRenderer.resultLookup.entries()) {
+    for (let [conn, { path, group }] of graphRenderer.resultLookup.entries()) {
         if (path)
             path.style.display = '';
         group.style.display = '';
@@ -648,7 +711,7 @@ async function animateGridToGraph () {
     graphRenderer.addRenderListener(createRenderListener(currentTabFunction!, graphRenderer));
 }
 
-async function animateGraphToGrid () {
+async function animateGraphToGrid() {
     // Render graph specifically
     let concatEntry = document.getElementById('concat-entry') as HTMLInputElement
     let np = origProgSVG.cloneNode(true) as unknown as SVGSVGElement;
@@ -693,7 +756,7 @@ async function animateGraphToGrid () {
             t.remove();
         })
     }
-    
+
     for (let op of newRenderInfo.valueContainers.keys()) {
         let oldFO = renderInfo.valueContainers.get(op)![0] as SVGForeignObjectElement;
         let newFO = newRenderInfo.valueContainers.get(op)![0] as SVGForeignObjectElement;
@@ -706,7 +769,7 @@ async function animateGraphToGrid () {
 
     let gr = renderer as GraphRenderer;
     gr.connectionGroup.remove();
-    
+
     await wait(500);
     progSVG.replaceWith(np)
     progSVG = np
@@ -820,10 +883,10 @@ async function animateTextToGrid() {
 
 //document.getElementById('animate-switch')?.addEventListener('click', animateGridToGraph)
 
-document.getElementById('file-input')?.addEventListener('change', async function(this : HTMLInputElement, e) {
+document.getElementById('file-input')?.addEventListener('change', async function (this: HTMLInputElement, e) {
     if (!this === null)
         return;
-    let t : HTMLInputElement = this!;
+    let t: HTMLInputElement = this!;
     let text = await t.files![0].text();
     if (t.files![0].name.endsWith(".csv") || t.files![0].name.endsWith(".tsv")) {
         let csvData = t.files![0].name.endsWith(".csv") ? csvloader.csvToObjectOfArrays(text) : csvloader.tsvToObjectOfArrays(text);
@@ -839,7 +902,7 @@ document.getElementById('file-input')?.addEventListener('change', async function
         graph.setArguments(args);
         graph.propagateWaypoints();
         for (let arg of args) {
-            graph.resultPorts.push({port: arg, connection: arg.connections[0]})
+            graph.resultPorts.push({ port: arg, connection: arg.connections[0] })
         }
         let data = new Array<Array<any>>();
         for (let col of csvData.columns) {
@@ -849,11 +912,11 @@ document.getElementById('file-input')?.addEventListener('change', async function
             }
         }
         let name = t.files![0].name.replace('.csv', '').replaceAll(/[^a-zA-Z0-9]/g, '');
-        let sdf = new SubductFunction(name, args, graph.resultPorts.map(x => x.port), async (...a : Array<any>) => {
+        let sdf = new SubductFunction(name, args, graph.resultPorts.map(x => x.port), async (...a: Array<any>) => {
             let ev = await newTabFunction.graph.evaluate2(a)
             return ev.returnValues
         })
-        let sdf2 = new SubductFunction(name, [], [{ type: types.Stream(...graph.resultPorts.map(x => x.port.type))}], async (...a : Array<any>) => {
+        let sdf2 = new SubductFunction(name, [], [{ type: types.Stream(...graph.resultPorts.map(x => x.port.type)) }], async (...a: Array<any>) => {
             let ev = await newTabFunction.graph.evaluateStream(iterableToAsyncIterable(data));
             return [[ev]]
         })
@@ -875,13 +938,13 @@ document.getElementById('file-input')?.addEventListener('change', async function
     }
 })
 
-async function *iterableToAsyncIterable(it : Iterable<any>) {
+async function* iterableToAsyncIterable(it: Iterable<any>) {
     for (let i of it) {
         yield i;
     }
 }
 
-async function renderResults(results? : Array<Array<any>>) {
+async function renderResults(results?: Array<Array<any>>) {
     const inputData = currentTabFunction!.data;
     const graph = currentTabFunction!.graph;
     let allResults = [];
@@ -938,7 +1001,7 @@ async function renderResults(results? : Array<Array<any>>) {
     document.getElementById('output')!.appendChild(tbl);
 }
 
-function *zip(a : Array<any>, b : Array<any>) {
+function* zip(a: Array<any>, b: Array<any>) {
     let len = Math.min(a.length, b.length);
     for (let i = 0; i < len; i++) {
         yield [a[i], b[i]];
