@@ -22,7 +22,7 @@ class BlockRenderer {
         });
         console.log('Blockly workspace initialized');
 
-        // Define custom blocks here
+        // TODO: Define custom blocks here
         Blockly.Blocks['simple_block'] = {
             init: function () {
                 this.jsonInit({
@@ -54,7 +54,7 @@ class BlockRenderer {
 
     public render() {
         // TODO: Implement rendering logic, e.g., updating the Blockly workspace
-        // This function is just a placeholder to match the interface
+        // This function is just a placeholder to match the interface for now
         console.log('Rendering Blockly workspace');
     }
 
@@ -70,7 +70,7 @@ class BlockRenderer {
                 // Generate code for simple block
                 code += 'console.log("Simple block executed");\n';
             }
-            // Add additional conditions for other block types if needed
+            // TODO: Add additional conditions for other block types
         });
 
         return code;
