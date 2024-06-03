@@ -1,4 +1,4 @@
-import { defineConfig } from "../../node_modules/rollup/dist/rollup";
+//import { defineConfig } from "../../node_modules/rollup/dist/rollup";
 
 export function findIntersectionOfLines(line1: { x1: any; y1: any; x2: any; y2: any }, line2: { x1: any; y1: any; x2: any; y2: any }) {
     let x1 = line1.x1
@@ -162,7 +162,7 @@ export function svgBottomPointPath(rect1: Rect, endPoint: { x: number; y: number
     return pathSteps.join(' ')
 }
 
-export function svgBottomTopPath(rect1: Rect, rect2: Rect, offsetPos=0, gap1 = 30, gap2 = 30) {
+export function svgBottomTopPath(rect1: Rect, rect2: Rect, offsetPos = 0, gap1 = 30, gap2 = 30) {
     let startPoint = { x: rect1.left + rect1.width / 2 + offsetPos * 5, y: rect1.top + rect1.height }
     let endPoint = { x: rect2.left + rect2.width / 2, y: rect2.top }
     let dist = distance(startPoint.x, startPoint.y, endPoint.x, endPoint.y)
@@ -186,7 +186,7 @@ export function svgBottomTopPath(rect1: Rect, rect2: Rect, offsetPos=0, gap1 = 3
     const leftDown = `a ${rx} ${ry} 0 0 0 -10 10`
     let pathSteps = [
         `M ${startPoint.x} ${startPoint.y}`,
-        `v ${gap1 - (endRight ? 1 : -1 ) * (offsetPos * 5)}`,
+        `v ${gap1 - (endRight ? 1 : -1) * (offsetPos * 5)}`,
     ]
     const dx = Math.abs(startPoint.x - endPoint.x)
     // rx ry angle large-arc-flag sweep-flag [cw=1 acw=0] dx dy
@@ -274,7 +274,7 @@ export function svgBottomTopPath(rect1: Rect, rect2: Rect, offsetPos=0, gap1 = 3
     return pathSteps.join(' ')
 }
 
-export function svgCurvedPathThroughPoints(points: { x: number; y: number; }[], offsetPos=0) {
+export function svgCurvedPathThroughPoints(points: { x: number; y: number; }[], offsetPos = 0) {
     const gap1 = 30
     const gap2 = 30
     // Radius of turns
@@ -321,8 +321,8 @@ export function svgCurvedPathThroughPoints(points: { x: number; y: number; }[], 
         if (tooClose) {
             pathSteps.pop()
             pathSteps.push(`L${next.x},${next.y}`)
-        //} else if (dy < 20 && dx != 0) {
-        //    pathSteps.push(`Q ${x + 1 * (next.x - x) / 2} ${y + 0*(next.y - y) / 2} ${next.x} ${next.y}`)
+            //} else if (dy < 20 && dx != 0) {
+            //    pathSteps.push(`Q ${x + 1 * (next.x - x) / 2} ${y + 0*(next.y - y) / 2} ${next.x} ${next.y}`)
         } else if (dy > dx) {
             if (next.y < y) {
                 pathSteps.push(rightUp)
@@ -352,7 +352,7 @@ export function svgCurvedPathThroughPoints(points: { x: number; y: number; }[], 
             pathSteps.push(`l${diffY},${diffY}`)
             pathSteps.push(rightDown45Right)
         } else {
-            
+
         }
         pathSteps.push(`L${next.x},${next.y}`)
         x = next.x
@@ -367,27 +367,27 @@ export function svgCurvedPathThroughPoints(points: { x: number; y: number; }[], 
     return pathSteps.join(' ')
 }
 
-export function isPointInRect(point: { x: number; y: number; }, rect : Rect) {
+export function isPointInRect(point: { x: number; y: number; }, rect: Rect) {
     return point.x >= rect.left && point.x <= rect.left + rect.width &&
         point.y >= rect.top && point.y <= rect.top + rect.height
 }
 
-export function doRectsIntersect(rect1 : Rect, rect2 : Rect) {
+export function doRectsIntersect(rect1: Rect, rect2: Rect) {
     let rect1Corners = [
-        {x: rect1.left, y: rect1.top},
-        {x: rect1.left + rect1.width, y: rect1.top},
-        {x: rect1.left + rect1.width, y: rect1.top + rect1.height},
-        {x: rect1.left, y: rect1.top + rect1.height},
+        { x: rect1.left, y: rect1.top },
+        { x: rect1.left + rect1.width, y: rect1.top },
+        { x: rect1.left + rect1.width, y: rect1.top + rect1.height },
+        { x: rect1.left, y: rect1.top + rect1.height },
     ]
     for (let corner of rect1Corners) {
         if (isPointInRect(corner, rect2))
             return true
     }
     let rect2Corners = [
-        {x: rect2.left, y: rect2.top},
-        {x: rect2.left + rect2.width, y: rect2.top},
-        {x: rect2.left + rect2.width, y: rect2.top + rect2.height},
-        {x: rect2.left, y: rect2.top + rect2.height},
+        { x: rect2.left, y: rect2.top },
+        { x: rect2.left + rect2.width, y: rect2.top },
+        { x: rect2.left + rect2.width, y: rect2.top + rect2.height },
+        { x: rect2.left, y: rect2.top + rect2.height },
     ]
     for (let corner of rect2Corners) {
         if (isPointInRect(corner, rect1))
